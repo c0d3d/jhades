@@ -1,5 +1,6 @@
 package org.jhades.reports;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.jhades.model.ClasspathResource;
@@ -42,24 +43,30 @@ public class DuplicatesReport {
     }
 
     public void print() {
-        System.out.println("\n>> jHades multipleClassVersionsReport >> Duplicate classpath resources report: \n");
+        print(System.out);
+    }
+
+    public void print(PrintStream out) {
+        out.println("\n>> jHades multipleClassVersionsReport >> Duplicate classpath resources report: \n");
         ClasspathResources.sortByNumberOfVersionsDesc(resourcesWithDuplicates);
 
         for (ClasspathResource resource : resourcesWithDuplicates) {
             if (!resourcesToExclude.contains(resource.getName())) {
-                System.out.println(resource.getName() + " has " + resource.getResourceFileVersions().size() + " versions on these classpath locations:\n");
+                out.println(resource.getName() + " has " + resource.getResourceFileVersions().size() + " versions on these classpath locations:\n");
                 for (ClasspathResourceVersion resourceFileVersion : resource.getResourceFileVersions()) {
                     String classLoaderName = resourceFileVersion.getClasspathEntry().getClassLoaderName();
-                    System.out.println("    " + (classLoaderName != null ? classLoaderName : "") + " - "
+                    out.println("    " + (classLoaderName != null ? classLoaderName : "") + " - "
                             + urlFormatter.formatUrl(resourceFileVersion.getClasspathEntry().getUrl())
                             + " - class file size = " + resourceFileVersion.getFileSize());
                 }
-                System.out.println();
+                out.println();
             }
         }
 
         if (resourcesWithDuplicates.isEmpty()) {
-            System.out.println("No duplicates where found.\n");
+            out.println("No duplicates where found.\n");
         }
+
+        out.flush();
     }
 }

@@ -1,5 +1,6 @@
 package org.jhades;
 
+import java.io.PrintStream;
 import java.net.URL;
 import java.util.List;
 import org.jhades.model.ClasspathEntry;
@@ -17,74 +18,97 @@ import org.jhades.service.ClasspathScanner;
  */
 public class JHades {
 
+    /**
+     * A {@link PrintStream} that jHades will write all its output to.
+     */
+    private final PrintStream out;
+
+    /**
+     * Constructs jHades such that any report output will be written to {@code out}.
+     * @param out The {@link PrintStream} to write to.
+     */
+    public JHades(PrintStream out) {
+        this.out = out;
+    }
+
+    /**
+     * Creates a jHades that will write its output to {@link System#out}.
+     * @see #JHades(PrintStream)
+     */
+    public JHades() {
+        this(System.out);
+    }
+
     private ClasspathScanner scanner = new ClasspathScanner();
 
     public JHades printClassLoaderNames() {
 
-        System.out.println("\n>> jHades printClassLoaders >> Printing classloader class names (ordered from child to parent):\n");
+        out.println("\n>> jHades printClassLoaders >> Printing classloader class names (ordered from child to parent):\n");
 
         List<ClazzLoader> classLoaders = scanner.findAllClassLoaders();
         boolean notSupportedFound = false;
 
         for (ClazzLoader classLoader : classLoaders) {
             if (classLoader.isSupported()) {
-                System.out.println(classLoader.getName());
+                out.println(classLoader.getName());
             } else {
                 notSupportedFound = true;
-                System.out.println(classLoader.getName() + " - NOT SUPORTED");
+                out.println(classLoader.getName() + " - NOT SUPORTED");
             }
         }
         endCommand(classLoaders.size() > 0);
 
         if (notSupportedFound) {
-            System.out.println("Note: NOT SUPPORTED class loader means that any classes loaded by such a classloader will not be found on any jHades queries. \n");
+            out.println("Note: NOT SUPPORTED class loader means that any classes loaded by such a classloader will not be found on any jHades queries. \n");
         }
 
+        out.flush();
         return this;
     }
 
     public JHades dumpClassloaderInfo() {
 
-        System.out.println("\n>> jHades printClassLoaders >> Printing all classloader available info (from the class loader toString(), ordered from child to parent):\n");
+        out.println("\n>> jHades printClassLoaders >> Printing all classloader available info (from the class loader toString(), ordered from child to parent):\n");
 
         List<ClazzLoader> classLoaders = scanner.findAllClassLoaders();
         boolean notSupportedFound = false;
 
         for (ClazzLoader classLoader : classLoaders) {
             if (classLoader.isSupported()) {
-                System.out.println("\n>>> Dumping available info for classloader " + classLoader.getName() + "\n");
-                System.out.println(classLoader.getDetails());
+                out.println("\n>>> Dumping available info for classloader " + classLoader.getName() + "\n");
+                out.println(classLoader.getDetails());
             } else {
                 notSupportedFound = true;
-                System.out.println(classLoader.getName() + " - NOT SUPORTED");
+                out.println(classLoader.getName() + " - NOT SUPORTED");
             }
         }
         endCommand(classLoaders.size() > 0);
 
         if (notSupportedFound) {
-            System.out.println("Note: NOT SUPPORTED class loader means that any classes loaded by such a classloader will not be found on any jHades queries. \n");
+            out.println("Note: NOT SUPPORTED class loader means that any classes loaded by such a classloader will not be found on any jHades queries. \n");
         }
 
+        out.flush();
         return this;
     }
 
     public JHades printClasspath() {
 
-        System.out.println("\n>> jHades printClasspath >> Printing all class folder and jars on the classpath:\n");
+        out.println("\n>> jHades printClasspath >> Printing all class folder and jars on the classpath:\n");
 
         List<ClasspathEntry> classpathEntries = scanner.findAllClasspathEntries();
         ClazzLoader clazzLoader = null;
 
         for (ClasspathEntry entry : classpathEntries) {
             if (entry.getClassLoader() != null && !entry.getClassLoader().equals(clazzLoader)) {
-                System.out.println(); // line break between class loaders
+                out.println(); // line break between class loaders
                 clazzLoader = entry.getClassLoader();
             }
-            System.out.println(entry.getClassLoaderName() + " - " + entry.getUrl());
+            out.println(entry.getClassLoaderName() + " - " + entry.getUrl());
         }
 
         endCommand(classpathEntries.size() > 0);
-
+        out.flush();
         return this;
     }
 
@@ -94,24 +118,24 @@ public class JHades {
             throw new IllegalArgumentException("Resource path cannot be null.");
         }
 
-        System.out.println(">> jHades printResourcePath >> searching for " + resource + "\n");
+        out.println(">> jHades printResourcePath >> searching for " + resource + "\n");
 
         List<URL> allVersions = scanner.findAllResourceVersions(resource);
         boolean resultsFound = allVersions != null && allVersions.size() > 0;
 
-        System.out.println("All versions:\n");
+        out.println("All versions:\n");
         for (URL version : allVersions) {
-            System.out.println(version);
+            out.println(version);
         }
 
         URL currentVersion = scanner.findCurrentResourceVersion(resource);
 
         if (resultsFound && currentVersion != null) {
-            System.out.println("\nCurrent version being used: \n\n" + currentVersion);
+            out.println("\nCurrent version being used: \n\n" + currentVersion);
         }
 
         endCommand(resultsFound);
-
+        out.flush();
         return this;
 
     }
@@ -132,16 +156,16 @@ public class JHades {
             throw new IllegalArgumentException("Class name cannot be null.");
         }
 
-        System.out.println(">> jHades searchClass >> Searching for class: " + clazz.getCanonicalName() + "\n");
+        out.println(">> jHades searchClass >> Searching for class: " + clazz.getCanonicalName() + "\n");
 
         ClasspathResource foundClass = scanner.findClass(clazz);
 
         for (ClasspathResourceVersion version : foundClass.getResourceFileVersions()) {
-            System.out.println(version.getClasspathEntry().getUrl() + foundClass.getName() + " size = " + version.getFileSize());
+            out.println(version.getClasspathEntry().getUrl() + foundClass.getName() + " size = " + version.getFileSize());
         }
 
         endCommand(foundClass != null);
-
+        out.flush();
         return this;
     }
 
@@ -151,21 +175,21 @@ public class JHades {
             throw new IllegalArgumentException("search string cannot be null or empty.");
         }
 
-        System.out.println(">> jHades search >> Searching for resorce using search string: " + search + "\n");
+        out.println(">> jHades search >> Searching for resorce using search string: " + search + "\n");
 
         List<ClasspathResource> classpathResources = scanner.findByRegex(search);
 
         boolean resultsFound = classpathResources != null && classpathResources.size() > 0;
 
         if (resultsFound) {
-            System.out.println("\nResults Found:\n");
+            out.println("\nResults Found:\n");
             for (ClasspathResource classpathResource : classpathResources) {
-                System.out.println(classpathResource.getName());
+                out.println(classpathResource.getName());
             }
         }
 
         endCommand(resultsFound);
-
+        out.flush();
         return this;
     }
 
@@ -178,13 +202,14 @@ public class JHades {
         List<ClasspathResource> resourcesWithDuplicates = scanner.findAllResourcesWithDuplicates(excludeSameSizeDups);
 
         DuplicatesReport report = new DuplicatesReport(resourcesWithDuplicates);
-        report.print();
+        report.print(out);
 
+        out.flush();
         return this;
     }
 
     public JHades overlappingJarsReport() {
-        System.out.println("\n>> jHades - scanning classpath for overlapping jars: \n");
+        out.println("\n>> jHades - scanning classpath for overlapping jars: \n");
 
         List<JarPair> jarOverlapReportLines = scanner.findOverlappingJars();
 
@@ -196,19 +221,20 @@ public class JHades {
             } else {
                 reportLine += "different classloaders.\n";
             }
-            System.out.println(reportLine);
+            out.println(reportLine);
         }
 
         endCommand(jarOverlapReportLines.size() > 0);
-
+        out.flush();
         return this;
     }
 
     private void endCommand(boolean resultsFound) {
         if (!resultsFound) {
-            System.out.println("No results found.\n");
+            out.println("No results found.\n");
         } else {
-            System.out.println("");
+            out.println("");
         }
+        out.flush();
     }
 }
